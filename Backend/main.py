@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from services.history import process_answer
 from services.schemas import Histories
+from routes.backend_b import router as backend_b_router
 #GETTING fastapi
 app=FastAPI()
 
@@ -10,7 +11,9 @@ app=FastAPI()
 def root():
     return {"message:": "Hermes Backend"}
 
+
 @app.post("/history/answer")
+@app.include_router(backend_b_router)
 def answer_history(request: Histories):
 
     #We basically have P3-b working on the services, which will connect Atulyas AI and Zakis Database
