@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, Column, String, Integer, Boolean, Timestamp, ForeignKey, JSON, DateTime
+from sqlalchemy import create_engine, Column, String, Integer, Boolean, ForeignKey, JSON, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 
 # ==========================================
