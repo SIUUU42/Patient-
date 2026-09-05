@@ -11,9 +11,9 @@ app=FastAPI()
 def root():
     return {"message:": "Hermes Backend"}
 
-
+app.include_router(backend_b_router)
 @app.post("/history/answer")
-@app.include_router(backend_b_router)
+
 def answer_history(request: Histories):
 
     #We basically have P3-b working on the services, which will connect Atulyas AI and Zakis Database
