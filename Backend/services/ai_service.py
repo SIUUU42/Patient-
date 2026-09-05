@@ -1,16 +1,15 @@
 import httpx
 
-AI_SERVICE_URL = "YOUR_AI_GUY_URL"
+AI_SERVICE_URL = "http://10.79.50.109:8000"
 
 async def process_symptom(text, language):
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            f"{AI_SERVICE_URL}/api/process-symptom",
+            f"{AI_SERVICE_URL}/api/intake/dialogue",
             json={
-                "text": text,
+                "transcript": text,
                 "language": language
             }
         )
 
-        response.raise_for_status()
-        return response.json()
+        return {"ai_status_code": response.status_code,"ai_response": response.text}
