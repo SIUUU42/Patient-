@@ -1,19 +1,14 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from services.history import process_answer
-
+from services.schemas import Histories
 #GETTING fastapi
 app=FastAPI()
 
-#class of histories, will contain question and answer of ai, validated using pydantic
-class Histories(BaseModel):
-    session_id: str
-    question_id: str
-    answer: str
 
 @app.get('/')
 def root():
-    return {"message:", "Hermes Backend"}
+    return {"message:": "Hermes Backend"}
 
 @app.post("/history/answer")
 def answer_history(request: Histories):
@@ -22,6 +17,6 @@ def answer_history(request: Histories):
     #Use process_answer function(under p3-b) to fetch the answer
     #Basic Communication between Shivaj and Rudra
     #WIP
-    result = process_answer(request.answer)
+    result = process_answer(request.session_id, request.question_id, request.answer)
 
     return result
