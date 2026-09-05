@@ -1,5 +1,6 @@
-def process_answer(answer):
+def process_answer(session_id, question_id, answer):
     return {
-        "received_answer": answer,
-        "message": "P3-B received the answer"
+        "session_id": session_id,
+        "question_id": question_id,
+        "answer": answer
     }
