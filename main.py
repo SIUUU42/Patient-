@@ -278,3 +278,97 @@ def export_fhir_bundle(patient_id: str, db: Session = Depends(get_db)):
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "entry": bundle_entries
     }
+# ==========================================
+# 6. INTEGRATION ENDPOINTS FOR TEAM MEMBERS
+# ==========================================
+
+class PatientIntakeSubmit(BaseModel):
+    patient_id: str
+    ayush_profile: Dict[str, Any]  # Person 1: Appetite, digestion, sleep
+    transcript: str                # Person 1: Audio transcript
+    document_ids: Optional[List[str]] = None
+
+class AISummaryPayload(BaseModel):
+    patient_id: str
+    chief_complaint: str
+    hpi: str
+    past_meds: Optional[str] = None
+    lab_anomalies: Optional[str] = None
+    is_emergency: bool = False     # Person 3: Triage Flag
+    emergency_reason: Optional[str] = None
+
+# --- Endpoint 1: Person 1 saves AYUSH Form & Intake Data ---
+@app.post("/api/patient/submit-intake")
+def submit_patient_intake(payload: PatientIntakeSubmit, db: Session = Depends(get_db)):
+    # Create or update the medical timeline entry with raw intake data
+    event_id = f"EVT-{int(datetime.utcnow().timestamp())}"
+    timeline_event = MedicalTimeline(
+        event_id=event_id,
+        patient_id=payload.patient_id,
+        event_type="INTAKE_NOTE",
+        title="Patient Intake & AYUSH Assessment",
+        summary_data={
+            "ayush_profile": payload.ayush_profile,
+            "raw_transcript": payload.transcript
+        }
+    )
+    db.add(timeline_event)
+    db.commit()
+    return {"status": "SUCCESS", "event_id": event_id}
+
+
+# --- Endpoint 2: Person 3 (AI Lead) pushes Structured AI Summaries ---
+@app.post("/api/ai/save-summary")
+def save_ai_summary(payload: AISummaryPayload, db: Session = Depends(get_db)):
+    event_id = f"AI-{int(datetime.utcnow().timestamp())}"
+    
+    # Store AI extraction as a Timeline event
+    ai_event = MedicalTimeline(
+        event_id=event_id,
+        patient_id=payload.patient_id,
+        event_type="CLINICAL_SUMMARY",
+        title="AI Processed Clinical Summary",
+        summary_data={
+            "chief_complaint": payload.chief_complaint,
+            "hpi": payload.hpi,
+            "past_meds": payload.past_meds,
+            "lab_anomalies": payload.lab_anomalies,
+            "is_emergency": payload.is_emergency,
+            "emergency_reason": payload.emergency_reason
+        }
+    )
+    db.add(ai_event)
+    db.commit()
+    
+    return {"status": "SUCCESS", "message": "AI summary linked to patient record"}
+
+
+# --- Endpoint 3: Person 2 (Doctor) fetches active patient queue ---
+@app.get("/api/doctor/queue")
+def get_doctor_queue(db: Session = Depends(get_db)):
+    # Fetches all patients alongside their latest clinical summary
+    patients = db.query(Patient).all()
+    queue = []
+    
+    for p in patients:
+        latest_summary = (
+            db.query(MedicalTimeline)
+            .filter(MedicalTimeline.patient_id == p.patient_id)
+            .filter(MedicalTimeline.event_type == "CLINICAL_SUMMARY")
+            .order_by(MedicalTimeline.created_at.desc())
+            .first()
+        )
+        
+        summary_data = latest_summary.summary_data if latest_summary else {}
+        
+        queue.append({
+            "patient_id": p.patient_id,
+            "name": p.name,
+            "age": p.age,
+            "sex": p.sex,
+            "chief_complaint": summary_data.get("chief_complaint", "Pending AI Processing"),
+            "is_emergency": summary_data.get("is_emergency", False),
+            "emergency_reason": summary_data.get("emergency_reason", None)
+        })
+        
+    return queue
