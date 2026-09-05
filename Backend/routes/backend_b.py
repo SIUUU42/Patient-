@@ -1,15 +1,16 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
-from services.schemas import Histories
+from services.ai_service import process_symptom
 
-router = APIRouter(prefix="/backend-b", tags=["Rudra"])
+router = APIRouter(
+    prefix="/backend-b",
+    tags=["Backend-B"]
+)
 
+@router.post("/test-ai")
+async def test_ai(data: dict):
+    result = await process_symptom(
+        data["text"],
+        data["language"]
+    )
 
-
-@router.post("/history/answer")
-async def receive_answer(request: Histories):
-    return {
-        "session_id": request.session_id,
-        "question_id": request.question_id,
-        "answer": request.answer
-    }
+    return result
