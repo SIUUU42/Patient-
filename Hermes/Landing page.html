@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermes | Care coordination</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="Styles.css">
+
+</head>
+<body class="min-h-screen flex items-center justify-center bg-background text-foreground p-6">
+
+  <main class="w-full max-w-md" id="app">
+
+    <!-- Screen 1: Language -->
+    <section id="screen-language">
+      <p class="eyebrow" data-i18n="chooseLanguage">भाषा चुनें</p>
+      <h1 class="hero-title">🏥 Hermes<br><span data-i18n="selectLanguage">Select Language</span></h1>
+      <div id="language-list" class="flex flex-col gap-3">
+        <button class="option-btn w-full p-4 text-lg font-medium border border-border rounded-lg bg-card hover:bg-secondary transition" data-lang="en">English</button>
+        <button class="option-btn w-full p-4 text-lg font-medium border border-border rounded-lg bg-card hover:bg-secondary transition" data-lang="hi">हिन्दी</button>
+        <button class="option-btn w-full p-4 text-lg font-medium border border-border rounded-lg bg-card hover:bg-secondary transition" data-lang="bn">বাংলা</button>
+        <button class="option-btn w-full p-4 text-lg font-medium border border-border rounded-lg bg-card hover:bg-secondary transition" data-lang="te">తెలుగు</button>
+        <button class="option-btn w-full p-4 text-lg font-medium border border-border rounded-lg bg-card hover:bg-secondary transition" data-lang="mr">मराठी</button>
+        <button class="option-btn w-full p-4 text-lg font-medium border border-border rounded-lg bg-card hover:bg-secondary transition" data-lang="ta">தமிழ்</button>
+        <button class="option-btn w-full p-4 text-lg font-medium border border-border rounded-lg bg-card hover:bg-secondary transition" data-lang="gu">ગુજરાતી</button>
+      </div>
+      <button id="continue-language" class="primary-button" data-i18n="continue" disabled>Continue</button>
+    </section>
+
+    <!-- Screen 2: Who are you -->
+    <section id="screen-role" class="hidden">
+      <p class="eyebrow text-center">Hermes</p>
+      <h1 class="hero-title" data-i18n="whoAreYou">Who are you?</h1>
+      <div class="stack">
+        <div class="role-card" data-role="patient">
+          <div class="role-icon">👤</div><div><div class="card-title" data-i18n="patientVisitor">Patient / Visitor</div>
+          <div class="card-copy" data-i18n="patientDescription">I have a consultation</div></div>
+        </div>
+        <div class="role-card" data-role="doctor">
+          <div class="role-icon">🩺</div><div><div class="card-title" data-i18n="doctor">Doctor</div>
+          <div class="card-copy" data-i18n="doctorDescription">I manage patient care</div></div>
+        </div>
+      </div>
+      <button id="continue-role" class="primary-button" data-i18n="continue" disabled>Continue</button>
+    </section>
+
+    <!-- Screen 3: Login and OTP verification -->
+    <section id="screen-login" class="hidden">
+      <button class="back-btn" data-back="screen-role">← <span data-i18n="back">Back</span></button>
+      <p class="eyebrow" data-i18n="secureAccess">Secure access</p>
+      <h1 class="hero-title" data-i18n="verifyPhone">Verify your phone</h1>
+      <p class="subtitle"><span data-i18n="otpIntro">We’ll send a one-time password to continue as a</span> <span id="login-role-label">patient</span>.</p>
+
+      <form id="login-form" class="flex flex-col gap-4">
+        <label class="field-label" for="phone-number" data-i18n="phoneNumber">Phone number</label>
+        <div class="flex gap-2">
+          <select id="country-code" class="p-4 border border-border rounded-lg bg-card" aria-label="Country code">
+            <option value="+91">+91</option>
+            <option value="+1">+1</option>
+            <option value="+44">+44</option>
+          </select>
+          <input id="phone-number" class="min-w-0 flex-1 p-4 border border-border rounded-lg bg-card" type="tel" inputmode="numeric" autocomplete="tel" placeholder="98765 43210" required>
+        </div>
+        <button id="send-otp" type="submit" class="primary-button" data-i18n="sendOtp">Send OTP</button>
+      </form>
+
+      <form id="otp-form" class="hidden flex-col gap-4 mt-5">
+        <label class="field-label" for="otp-code" data-i18n="enterOtp">Enter OTP</label>
+        <input id="otp-code" class="w-full p-4 border border-border rounded-lg bg-card tracking-[0.5em] text-center" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" required>
+        <button type="submit" class="primary-button" data-i18n="verifyContinue">Verify and continue</button>
+        <button id="resend-otp" type="button" class="text-button" data-i18n="resendOtp">Resend OTP</button>
+      </form>
+      <button id="skip-otp" type="button" class="demo-button">⚡ <span data-i18n="skipOtp">Skip OTP for demo</span></button>
+      <p id="login-status" class="text-sm mt-4 text-center" role="status"></p>
+    </section>
+
+    <!-- Screen 4: Treatment -->
+    <section id="screen-treatment" class="hidden">
+      <p class="eyebrow" data-i18n="almostThere">Almost there</p>
+      <h1 class="hero-title" data-i18n="selectTreatment">Select treatment method</h1>
+      <p class="subtitle" data-i18n="treatmentDescription">Choose the care pathway for this consultation.</p>
+      <div class="stack">
+        <button class="treatment-button" data-treatment="Medical">
+          <span class="treatment-icon">⚕️</span><span><strong data-i18n="medical">Medical</strong>
+          <small data-i18n="medicalDescription">Modern clinical consultation and diagnostics</small></span>
+        </button>
+        <button class="treatment-button" data-treatment="AYUSH">
+          <span class="treatment-icon">🌿</span><span><strong data-i18n="ayush">AYUSH</strong>
+          <small data-i18n="ayushDescription">Ayurveda, Yoga, Unani, Siddha and Homoeopathy</small></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Screen 5: Patient workspace -->
+    <section id="screen-patient" class="hidden dashboard">
+      <div class="dashboard-header">
+        <div><p class="eyebrow" data-i18n="patientWorkspace">Patient workspace</p><h1 class="dashboard-title" data-i18n="welcomeBack">Hello, welcome back</h1></div>
+        <button class="logout-btn text-button" data-i18n="logOut">Log out</button>
+      </div>
+      <div class="dashboard-grid">
+        <article class="feature-card feature-card-wide">
+          <div class="feature-icon">💬</div><h2 class="card-title" data-i18n="symptomAssistant">Symptom assistant</h2>
+          <p class="card-copy" data-i18n="symptomDescription">Describe how you’re feeling and prepare notes for your consultation.</p>
+          <div id="chat-messages" class="chat-messages" aria-live="polite">
+            <div class="chat-bubble assistant">Hello! I can help you organise your symptoms before your consultation.</div>
+          </div>
+          <textarea id="symptom-input" class="dashboard-input" rows="2" data-i18n-placeholder="symptomPlaceholder" placeholder="Tell us about your symptoms..."></textarea>
+          <div class="chat-actions"><button id="chat-send" class="primary-action" data-i18n="startChat">Send message</button><button id="speech-btn" class="secondary-action" type="button" data-i18n="speak">🎙 Speak</button></div>
+          <p id="speech-status" class="text-xs text-muted-foreground mt-2"></p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">📄</div><h2 class="card-title" data-i18n="scanDocuments">Scan documents</h2>
+          <p class="card-copy" data-i18n="scanDescription">Upload a prescription or medical document for OCR.</p>
+          <label class="upload-slot" for="document-upload"><span class="upload-plus">＋</span><span data-i18n="uploadDocument">Upload prescription or report</span><small>JPG, PNG or PDF · up to 10 MB</small><input id="document-upload" type="file" accept="image/*,.pdf"></label>
+          <img id="document-preview" class="document-preview hidden" alt="Uploaded document preview">
+          <button id="ocr-btn" class="secondary-action ocr-button" type="button" disabled>✨ Run OCR</button>
+          <p id="upload-status" class="text-xs text-muted-foreground mt-2"></p>
+          <pre id="ocr-result" class="ocr-result hidden"></pre>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">📚</div><h2 class="card-title" data-i18n="diagnosticHistory">Diagnostic history</h2>
+          <p class="card-copy" data-i18n="historyDescription">Create a clear summary to share with your care team.</p>
+          <button id="summary-btn" class="primary-action" data-i18n="generateSummary">Generate summary</button>
+          <p id="summary-status" class="text-xs text-muted-foreground mt-2"></p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Screen 6: Doctor workspace -->
+    <section id="screen-doctor" class="hidden dashboard">
+      <div class="dashboard-header">
+        <div><p class="eyebrow" data-i18n="doctorWorkspace">Doctor workspace</p><h1 class="dashboard-title" data-i18n="goodMorning">Good morning, Doctor</h1></div>
+        <div class="dashboard-header-actions"><button id="preview-patient" class="secondary-action" type="button">Patient tools</button><button class="logout-btn text-button" data-i18n="logOut">Log out</button></div>
+      </div>
+      <div class="dashboard-grid">
+        <article class="feature-card feature-card-wide"><div class="feature-icon">👥</div><h2 class="card-title" data-i18n="patientList">Patient list</h2><p class="card-copy" data-i18n="patientListDescription">Your recently active patients.</p><div class="patient-row"><span><strong>Ananya Sharma</strong><small data-i18n="lastVisitOne">Last visit: 04 Sep 2026</small></span><button class="secondary-action" data-i18n="view">View</button></div><div class="patient-row"><span><strong>Rohan Mehta</strong><small data-i18n="lastVisitTwo">Last visit: 28 Aug 2026</small></span><button class="secondary-action" data-i18n="view">View</button></div></article>
+        <article class="feature-card"><div class="feature-icon">📝</div><h2 class="card-title" data-i18n="patientSummaries">Patient summaries</h2><p class="card-copy" data-i18n="summariesDescription">Review generated diagnostic histories and care notes.</p><button class="primary-action" data-i18n="viewSummaries">View summaries</button></article>
+        <article class="feature-card"><div class="feature-icon">🗓</div><h2 class="card-title" data-i18n="scheduledConsultations">Scheduled consultations</h2><p class="card-copy" data-i18n="consultationsDescription">You have 3 consultations today.</p><div class="appointment"><strong>10:30 AM</strong><span>Ananya Sharma · Video</span></div><div class="appointment"><strong>02:00 PM</strong><span>Rohan Mehta · In person</span></div></article>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const translations = {
+      en: { chooseLanguage: 'Choose your language', selectLanguage: 'Select Language', continue: 'Continue', whoAreYou: 'Who are you?', patientVisitor: 'Patient / Visitor', patientDescription: 'I have a consultation', doctor: 'Doctor', doctorDescription: 'I manage patient care', back: 'Back', secureAccess: 'Secure access', verifyPhone: 'Verify your phone', otpIntro: 'We’ll send a one-time password to continue as a', phoneNumber: 'Phone number', sendOtp: 'Send OTP', enterOtp: 'Enter OTP', verifyContinue: 'Verify and continue', resendOtp: 'Resend OTP', skipOtp: 'Skip OTP for demo', almostThere: 'Almost there', selectTreatment: 'Select treatment method', treatmentDescription: 'Choose the care pathway for this consultation.', medical: 'Medical', medicalDescription: 'Modern clinical consultation and diagnostics', ayush: 'AYUSH', ayushDescription: 'Ayurveda, Yoga, Unani, Siddha and Homoeopathy', patientWorkspace: 'Patient workspace', welcomeBack: 'Hello, welcome back', logOut: 'Log out', symptomAssistant: 'Symptom assistant', symptomDescription: 'Describe how you’re feeling and prepare notes for your consultation.', symptomPlaceholder: 'Tell us about your symptoms...', startChat: 'Start chat', speak: '🎙 Speak', scanDocuments: 'Scan documents', scanDescription: 'Upload a prescription or medical document for OCR.', uploadDocument: 'Upload image or PDF', diagnosticHistory: 'Diagnostic history', historyDescription: 'Create a clear summary to share with your care team.', generateSummary: 'Generate summary', doctorWorkspace: 'Doctor workspace', goodMorning: 'Good morning, Doctor', patientList: 'Patient list', patientListDescription: 'Your recently active patients.', lastVisitOne: 'Last visit: 04 Sep 2026', lastVisitTwo: 'Last visit: 28 Aug 2026', view: 'View', patientSummaries: 'Patient summaries', summariesDescription: 'Review generated diagnostic histories and care notes.', viewSummaries: 'View summaries', scheduledConsultations: 'Scheduled consultations', consultationsDescription: 'You have 3 consultations today.' },
+      hi: { chooseLanguage: 'अपनी भाषा चुनें', selectLanguage: 'भाषा चुनें', continue: 'आगे बढ़ें', whoAreYou: 'आप कौन हैं?', patientVisitor: 'मरीज़ / आगंतुक', patientDescription: 'मुझे परामर्श चाहिए', doctor: 'डॉक्टर', doctorDescription: 'मैं मरीज़ों की देखभाल करता हूँ', back: 'वापस', secureAccess: 'सुरक्षित प्रवेश', verifyPhone: 'फ़ोन सत्यापित करें', otpIntro: 'जारी रखने के लिए हम एक OTP भेजेंगे:', phoneNumber: 'फ़ोन नंबर', sendOtp: 'OTP भेजें', enterOtp: 'OTP दर्ज करें', verifyContinue: 'सत्यापित करके आगे बढ़ें', resendOtp: 'OTP फिर भेजें', skipOtp: 'डेमो के लिए OTP छोड़ें', almostThere: 'लगभग तैयार', selectTreatment: 'उपचार विधि चुनें', treatmentDescription: 'इस परामर्श के लिए देखभाल का विकल्प चुनें।', medical: 'मेडिकल', medicalDescription: 'आधुनिक चिकित्सकीय परामर्श और जांच', ayush: 'आयुष', ayushDescription: 'आयुर्वेद, योग, यूनानी, सिद्ध और होम्योपैथी', patientWorkspace: 'मरीज़ कार्यक्षेत्र', welcomeBack: 'वापसी पर स्वागत है', logOut: 'लॉग आउट', symptomAssistant: 'लक्षण सहायक', symptomDescription: 'अपने लक्षण बताएं और परामर्श के लिए नोट्स तैयार करें।', symptomPlaceholder: 'अपने लक्षण लिखें...', startChat: 'चैट शुरू करें', speak: '🎙 बोलें', scanDocuments: 'दस्तावेज़ स्कैन करें', scanDescription: 'OCR के लिए प्रिस्क्रिप्शन या मेडिकल दस्तावेज़ अपलोड करें।', uploadDocument: 'चित्र या PDF अपलोड करें', diagnosticHistory: 'नैदानिक इतिहास', historyDescription: 'अपनी देखभाल टीम के लिए सारांश बनाएं।', generateSummary: 'सारांश बनाएं', doctorWorkspace: 'डॉक्टर कार्यक्षेत्र', goodMorning: 'सुप्रभात, डॉक्टर', patientList: 'मरीज़ सूची', patientListDescription: 'हाल ही में सक्रिय मरीज़।', lastVisitOne: 'अंतिम मुलाकात: 04 सितम्बर 2026', lastVisitTwo: 'अंतिम मुलाकात: 28 अगस्त 2026', view: 'देखें', patientSummaries: 'मरीज़ सारांश', summariesDescription: 'नैदानिक इतिहास और देखभाल नोट्स देखें।', viewSummaries: 'सारांश देखें', scheduledConsultations: 'निर्धारित परामर्श', consultationsDescription: 'आज आपके 3 परामर्श हैं।' },
+      bn: { chooseLanguage: 'আপনার ভাষা বেছে নিন', selectLanguage: 'ভাষা নির্বাচন করুন', continue: 'এগিয়ে যান', whoAreYou: 'আপনি কে?', patientVisitor: 'রোগী / দর্শনার্থী', patientDescription: 'আমার পরামর্শ প্রয়োজন', doctor: 'ডাক্তার', doctorDescription: 'আমি রোগীর যত্ন পরিচালনা করি', back: 'ফিরে যান', secureAccess: 'নিরাপদ প্রবেশ', verifyPhone: 'ফোন যাচাই করুন', otpIntro: 'চালিয়ে যেতে আমরা একটি OTP পাঠাব:', phoneNumber: 'ফোন নম্বর', sendOtp: 'OTP পাঠান', enterOtp: 'OTP লিখুন', verifyContinue: 'যাচাই করে এগিয়ে যান', resendOtp: 'OTP আবার পাঠান', skipOtp: 'ডেমোর জন্য OTP এড়িয়ে যান', almostThere: 'প্রায় প্রস্তুত', selectTreatment: 'চিকিৎসার পদ্ধতি বেছে নিন', treatmentDescription: 'এই পরামর্শের জন্য যত্নের পথ বেছে নিন।', medical: 'মেডিকেল', medicalDescription: 'আধুনিক চিকিৎসা পরামর্শ ও পরীক্ষা', ayush: 'আয়ুষ', ayushDescription: 'আয়ুর্বেদ, যোগ, ইউনানি, সিদ্ধ ও হোমিওপ্যাথি', patientWorkspace: 'রোগীর কর্মক্ষেত্র', welcomeBack: 'আবার স্বাগতম', logOut: 'লগ আউট', symptomAssistant: 'উপসর্গ সহায়ক', symptomDescription: 'আপনার উপসর্গ বলুন এবং পরামর্শের জন্য নোট তৈরি করুন।', symptomPlaceholder: 'আপনার উপসর্গ লিখুন...', startChat: 'চ্যাট শুরু করুন', speak: '🎙 বলুন', scanDocuments: 'নথি স্ক্যান করুন', scanDescription: 'OCR-এর জন্য প্রেসক্রিপশন বা চিকিৎসা নথি আপলোড করুন।', uploadDocument: 'ছবি বা PDF আপলোড করুন', diagnosticHistory: 'রোগ নির্ণয়ের ইতিহাস', historyDescription: 'আপনার যত্নের দলের সঙ্গে শেয়ার করার জন্য সারাংশ তৈরি করুন।', generateSummary: 'সারাংশ তৈরি করুন', doctorWorkspace: 'ডাক্তারের কর্মক্ষেত্র', goodMorning: 'সুপ্রভাত, ডাক্তার', patientList: 'রোগীর তালিকা', patientListDescription: 'সম্প্রতি সক্রিয় রোগীরা।', view: 'দেখুন', patientSummaries: 'রোগীর সারাংশ', summariesDescription: 'রোগ নির্ণয়ের ইতিহাস ও যত্নের নোট দেখুন।', viewSummaries: 'সারাংশ দেখুন', scheduledConsultations: 'নির্ধারিত পরামর্শ', consultationsDescription: 'আজ আপনার ৩টি পরামর্শ আছে।' },
+      te: { chooseLanguage: 'మీ భాషను ఎంచుకోండి', selectLanguage: 'భాషను ఎంచుకోండి', continue: 'కొనసాగించండి', whoAreYou: 'మీరు ఎవరు?', patientVisitor: 'రోగి / సందర్శకుడు', patientDescription: 'నాకు సంప్రదింపులు కావాలి', doctor: 'వైద్యుడు', doctorDescription: 'నేను రోగుల సంరక్షణను నిర్వహిస్తాను', back: 'వెనుకకు', secureAccess: 'సురక్షిత ప్రవేశం', verifyPhone: 'మీ ఫోన్‌ను ధృవీకరించండి', otpIntro: 'కొనసాగించడానికి మేము OTP పంపుతాము:', phoneNumber: 'ఫోన్ నంబర్', sendOtp: 'OTP పంపండి', enterOtp: 'OTP నమోదు చేయండి', verifyContinue: 'ధృవీకరించి కొనసాగండి', resendOtp: 'OTP మళ్లీ పంపండి', skipOtp: 'డెమో కోసం OTP దాటవేయండి', almostThere: 'దాదాపు సిద్ధం', selectTreatment: 'చికిత్సా విధానాన్ని ఎంచుకోండి', treatmentDescription: 'ఈ సంప్రదింపుల కోసం సంరక్షణ మార్గాన్ని ఎంచుకోండి.', medical: 'మెడికల్', medicalDescription: 'ఆధునిక వైద్య సంప్రదింపులు మరియు పరీక్షలు', ayush: 'ఆయుష్', ayushDescription: 'ఆయుర్వేదం, యోగా, యునాని, సిద్ధ మరియు హోమియోపతి', patientWorkspace: 'రోగి వర్క్‌స్పేస్', welcomeBack: 'తిరిగి స్వాగతం', logOut: 'లాగ్ అవుట్', symptomAssistant: 'లక్షణాల సహాయకుడు', symptomDescription: 'మీ లక్షణాలను వివరించి సంప్రదింపుల కోసం గమనికలు సిద్ధం చేయండి.', symptomPlaceholder: 'మీ లక్షణాలను రాయండి...', startChat: 'చాట్ ప్రారంభించండి', speak: '🎙 మాట్లాడండి', scanDocuments: 'పత్రాలను స్కాన్ చేయండి', scanDescription: 'OCR కోసం ప్రిస్క్రిప్షన్ లేదా వైద్య పత్రాన్ని అప్‌లోడ్ చేయండి.', uploadDocument: 'చిత్రం లేదా PDF అప్‌లోడ్ చేయండి', diagnosticHistory: 'రోగ నిర్ధారణ చరిత్ర', historyDescription: 'మీ సంరక్షణ బృందంతో పంచుకోవడానికి సారాంశాన్ని రూపొందించండి.', generateSummary: 'సారాంశం రూపొందించండి', doctorWorkspace: 'వైద్యుని వర్క్‌స్పేస్', goodMorning: 'శుభోదయం, డాక్టర్', patientList: 'రోగుల జాబితా', patientListDescription: 'ఇటీవల చురుకుగా ఉన్న రోగులు.', view: 'చూడండి', patientSummaries: 'రోగి సారాంశాలు', summariesDescription: 'రోగ నిర్ధారణ చరిత్ర మరియు సంరక్షణ గమనికలను చూడండి.', viewSummaries: 'సారాంశాలను చూడండి', scheduledConsultations: 'షెడ్యూల్ చేసిన సంప్రదింపులు', consultationsDescription: 'ఈరోజు మీకు 3 సంప్రదింపులు ఉన్నాయి.' },
+      mr: { chooseLanguage: 'तुमची भाषा निवडा', selectLanguage: 'भाषा निवडा', continue: 'पुढे जा', whoAreYou: 'तुम्ही कोण आहात?', patientVisitor: 'रुग्ण / अभ्यागत', patientDescription: 'मला सल्लामसलत हवी आहे', doctor: 'डॉक्टर', doctorDescription: 'मी रुग्णांची काळजी घेतो', back: 'मागे', secureAccess: 'सुरक्षित प्रवेश', verifyPhone: 'तुमचा फोन सत्यापित करा', otpIntro: 'पुढे जाण्यासाठी आम्ही OTP पाठवू:', phoneNumber: 'फोन नंबर', sendOtp: 'OTP पाठवा', enterOtp: 'OTP टाका', verifyContinue: 'सत्यापित करून पुढे जा', resendOtp: 'OTP पुन्हा पाठवा', skipOtp: 'डेमोसाठी OTP वगळा', almostThere: 'जवळजवळ तयार', selectTreatment: 'उपचार पद्धत निवडा', treatmentDescription: 'या सल्लामसलतीसाठी काळजीचा मार्ग निवडा.', medical: 'मेडिकल', medicalDescription: 'आधुनिक वैद्यकीय सल्ला आणि निदान', ayush: 'आयुष', ayushDescription: 'आयुर्वेद, योग, युनानी, सिद्ध आणि होमिओपॅथी', patientWorkspace: 'रुग्ण कार्यक्षेत्र', welcomeBack: 'पुन्हा स्वागत आहे', logOut: 'लॉग आउट', symptomAssistant: 'लक्षण सहाय्यक', symptomDescription: 'तुमची लक्षणे सांगा आणि सल्ल्यासाठी नोंदी तयार करा.', symptomPlaceholder: 'तुमची लक्षणे लिहा...', startChat: 'चॅट सुरू करा', speak: '🎙 बोला', scanDocuments: 'कागदपत्रे स्कॅन करा', scanDescription: 'OCR साठी प्रिस्क्रिप्शन किंवा वैद्यकीय कागदपत्र अपलोड करा.', uploadDocument: 'प्रतिमा किंवा PDF अपलोड करा', diagnosticHistory: 'निदानाचा इतिहास', historyDescription: 'तुमच्या काळजीच्या टीमसोबत शेअर करण्यासाठी सारांश तयार करा.', generateSummary: 'सारांश तयार करा', doctorWorkspace: 'डॉक्टर कार्यक्षेत्र', goodMorning: 'शुभ प्रभात, डॉक्टर', patientList: 'रुग्ण यादी', patientListDescription: 'अलीकडे सक्रिय रुग्ण.', view: 'पहा', patientSummaries: 'रुग्ण सारांश', summariesDescription: 'निदान इतिहास आणि काळजीच्या नोंदी पहा.', viewSummaries: 'सारांश पहा', scheduledConsultations: 'नियोजित सल्लामसलत', consultationsDescription: 'आज तुमच्या 3 सल्लामसलती आहेत.' },
+      ta: { chooseLanguage: 'உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்', selectLanguage: 'மொழியைத் தேர்ந்தெடுக்கவும்', continue: 'தொடரவும்', whoAreYou: 'நீங்கள் யார்?', patientVisitor: 'நோயாளி / பார்வையாளர்', patientDescription: 'எனக்கு ஆலோசனை தேவை', doctor: 'மருத்துவர்', doctorDescription: 'நான் நோயாளி பராமரிப்பை நிர்வகிக்கிறேன்', back: 'பின்செல்', secureAccess: 'பாதுகாப்பான அணுகல்', verifyPhone: 'உங்கள் தொலைபேசியைச் சரிபார்க்கவும்', otpIntro: 'தொடர ஒரு OTP அனுப்பப்படும்:', phoneNumber: 'தொலைபேசி எண்', sendOtp: 'OTP அனுப்பு', enterOtp: 'OTP உள்ளிடவும்', verifyContinue: 'சரிபார்த்து தொடரவும்', resendOtp: 'OTP மீண்டும் அனுப்பு', skipOtp: 'டெமோவுக்கு OTP தவிர்க்கவும்', almostThere: 'கிட்டத்தட்ட தயார்', selectTreatment: 'சிகிச்சை முறையைத் தேர்ந்தெடுக்கவும்', treatmentDescription: 'இந்த ஆலோசனைக்கான பராமரிப்பு வழியைத் தேர்ந்தெடுக்கவும்.', medical: 'மருத்துவம்', medicalDescription: 'நவீன மருத்துவ ஆலோசனை மற்றும் பரிசோதனைகள்', ayush: 'ஆயுஷ்', ayushDescription: 'ஆயுர்வேதம், யோகா, யுனானி, சித்தா மற்றும் ஹோமியோபதி', patientWorkspace: 'நோயாளி பணியிடம்', welcomeBack: 'மீண்டும் வரவேற்கிறோம்', logOut: 'வெளியேறு', symptomAssistant: 'அறிகுறி உதவியாளர்', symptomDescription: 'உங்கள் அறிகுறிகளை விவரித்து ஆலோசனைக்கான குறிப்புகளைத் தயாரிக்கவும்.', symptomPlaceholder: 'உங்கள் அறிகுறிகளை எழுதுங்கள்...', startChat: 'அரட்டையைத் தொடங்கு', speak: '🎙 பேசவும்', scanDocuments: 'ஆவணங்களை ஸ்கேன் செய்க', scanDescription: 'OCR-க்கு மருந்துச் சீட்டு அல்லது மருத்துவ ஆவணத்தைப் பதிவேற்றவும்.', uploadDocument: 'படம் அல்லது PDF பதிவேற்றவும்', diagnosticHistory: 'நோயறிதல் வரலாறு', historyDescription: 'உங்கள் பராமரிப்பு குழுவுடன் பகிர சுருக்கத்தை உருவாக்கவும்.', generateSummary: 'சுருக்கத்தை உருவாக்கு', doctorWorkspace: 'மருத்துவர் பணியிடம்', goodMorning: 'காலை வணக்கம், மருத்துவரே', patientList: 'நோயாளர் பட்டியல்', patientListDescription: 'சமீபத்தில் செயல்பட்ட நோயாளிகள்.', view: 'பார்', patientSummaries: 'நோயாளர் சுருக்கங்கள்', summariesDescription: 'நோயறிதல் வரலாறு மற்றும் பராமரிப்பு குறிப்புகளைப் பார்க்கவும்.', viewSummaries: 'சுருக்கங்களைப் பார்க்கவும்', scheduledConsultations: 'திட்டமிடப்பட்ட ஆலோசனைகள்', consultationsDescription: 'இன்று உங்களுக்கு 3 ஆலோசனைகள் உள்ளன.' },
+      gu: { chooseLanguage: 'તમારી ભાષા પસંદ કરો', selectLanguage: 'ભાષા પસંદ કરો', continue: 'આગળ વધો', whoAreYou: 'તમે કોણ છો?', patientVisitor: 'દર્દી / મુલાકાતી', patientDescription: 'મારે પરામર્શ જોઈએ છે', doctor: 'ડૉક્ટર', doctorDescription: 'હું દર્દીની સંભાળ સંભાળું છું', back: 'પાછા', secureAccess: 'સુરક્ષિત પ્રવેશ', verifyPhone: 'તમારો ફોન ચકાસો', otpIntro: 'આગળ વધવા માટે અમે OTP મોકલીશું:', phoneNumber: 'ફોન નંબર', sendOtp: 'OTP મોકલો', enterOtp: 'OTP દાખલ કરો', verifyContinue: 'ચકાસીને આગળ વધો', resendOtp: 'OTP ફરી મોકલો', skipOtp: 'ડેમો માટે OTP છોડો', almostThere: 'લગભગ તૈયાર', selectTreatment: 'સારવારની પદ્ધતિ પસંદ કરો', treatmentDescription: 'આ પરામર્શ માટે સંભાળનો માર્ગ પસંદ કરો.', medical: 'મેડિકલ', medicalDescription: 'આધુનિક તબીબી પરામર્શ અને નિદાન', ayush: 'આયુષ', ayushDescription: 'આયુર્વેદ, યોગ, યુનાની, સિદ્ધ અને હોમિયોપેથી', patientWorkspace: 'દર્દી કાર્યક્ષેત્ર', welcomeBack: 'ફરી સ્વાગત છે', logOut: 'લૉગ આઉટ', symptomAssistant: 'લક્ષણ સહાયક', symptomDescription: 'તમારા લક્ષણો જણાવો અને પરામર્શ માટે નોંધો તૈયાર કરો.', symptomPlaceholder: 'તમારા લક્ષણો લખો...', startChat: 'ચેટ શરૂ કરો', speak: '🎙 બોલો', scanDocuments: 'દસ્તાવેજ સ્કેન કરો', scanDescription: 'OCR માટે પ્રિસ્ક્રિપ્શન અથવા તબીબી દસ્તાવેજ અપલોડ કરો.', uploadDocument: 'છબી અથવા PDF અપલોડ કરો', diagnosticHistory: 'નિદાનનો ઇતિહાસ', historyDescription: 'તમારી સંભાળ ટીમ સાથે શેર કરવા માટે સારાંશ બનાવો.', generateSummary: 'સારાંશ બનાવો', doctorWorkspace: 'ડૉક્ટર કાર્યક્ષેત્ર', goodMorning: 'સુપ્રભાત, ડૉક્ટર', patientList: 'દર્દીની યાદી', patientListDescription: 'તાજેતરમાં સક્રિય દર્દીઓ.', view: 'જુઓ', patientSummaries: 'દર્દીના સારાંશ', summariesDescription: 'નિદાન ઇતિહાસ અને સંભાળની નોંધો જુઓ.', viewSummaries: 'સારાંશ જુઓ', scheduledConsultations: 'નિયોજિત પરામર્શ', consultationsDescription: 'આજે તમારા 3 પરામર્શ છે.' }
+    };
+    const translate = () => {
+      const language = translations[selectedLang] || translations.en;
+      document.documentElement.lang = selectedLang || 'en';
+      document.querySelectorAll('[data-i18n]').forEach(element => { const value = language[element.dataset.i18n]; if (value) element.textContent = value; });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(element => { const value = language[element.dataset.i18nPlaceholder]; if (value) element.placeholder = value; });
+    };
+    let selectedLang = null;
+    let selectedRole = null;
+    let selectedTreatment = null;
+    let otpRequestId = null;
+    const screens = [...document.querySelectorAll('main > section')];
+    const showScreen = id => {
+      screens.forEach(screen => screen.id === id ? screen.classList.remove('hidden') : screen.classList.add('hidden'));
+      document.getElementById('app').classList.toggle('dashboard-mode', id === 'screen-patient' || id === 'screen-doctor');
+    };
+    const setStatus = (message, isError = false) => {
+      const status = document.getElementById('login-status');
+      status.textContent = message;
+      status.className = `text-sm mt-4 text-center ${isError ? 'text-red-600' : 'text-muted-foreground'}`;
+    };
+
+    // --- Screen 1: language ---
+    const langButtons = document.querySelectorAll('#language-list .option-btn');
+    const continueLangBtn = document.getElementById('continue-language');
+
+    langButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langButtons.forEach(b => b.classList.remove('border-2', 'border-ring'));
+        btn.classList.add('border-2', 'border-ring');
+        selectedLang = btn.dataset.lang;
+        continueLangBtn.disabled = false;
+        translate();
+      });
+    });
+
+    continueLangBtn.addEventListener('click', () => {
+      document.getElementById('screen-language').classList.add('hidden');
+      document.getElementById('screen-role').classList.remove('hidden');
+    });
+
+    // --- Screen 2: role ---
+    const roleCards = document.querySelectorAll('#screen-role .role-card');
+    const continueRoleBtn = document.getElementById('continue-role');
+
+    roleCards.forEach(card => {
+      card.addEventListener('click', () => {
+        roleCards.forEach(c => c.classList.remove('border-2', 'border-ring'));
+        card.classList.add('border-2', 'border-ring');
+        selectedRole = card.dataset.role;
+        continueRoleBtn.disabled = false;
+      });
+    });
+
+    continueRoleBtn.addEventListener('click', () => {
+      document.getElementById('login-role-label').textContent = selectedRole === 'doctor' ? (translations[selectedLang] || translations.en).doctor : (translations[selectedLang] || translations.en).patientVisitor.toLowerCase();
+      showScreen('screen-login');
+    });
+
+    // --- Screen 3: phone and OTP ---
+    const loginForm = document.getElementById('login-form');
+    const otpForm = document.getElementById('otp-form');
+    const phoneInput = document.getElementById('phone-number');
+    const sendOtp = async (event) => {
+      event.preventDefault();
+      const phone = `${document.getElementById('country-code').value}${phoneInput.value.replace(/\D/g, '')}`;
+      if (phone.length < 10) { setStatus('Enter a valid phone number.', true); return; }
+      const button = document.getElementById('send-otp');
+      button.disabled = true; button.textContent = 'Sending...'; setStatus('');
+      try {
+        const response = await fetch('/api/auth/send-otp', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone, role: selectedRole }) });
+        if (!response.ok) throw new Error('Unable to send OTP');
+        const data = await response.json();
+        otpRequestId = data.requestId;
+        loginForm.classList.add('hidden'); otpForm.classList.remove('hidden'); otpForm.classList.add('flex');
+        setStatus(`OTP sent to ${phone}.`);
+      } catch (error) {
+        setStatus('We could not send the OTP. Please try again.', true);
+      } finally { button.disabled = false; button.textContent = 'Send OTP'; }
+    };
+    loginForm.addEventListener('submit', sendOtp);
+    document.getElementById('resend-otp').addEventListener('click', () => loginForm.dispatchEvent(new Event('submit', { cancelable: true })));
+    otpForm.addEventListener('submit', async event => {
+      event.preventDefault(); setStatus('Verifying...');
+      try {
+        const response = await fetch('/api/auth/verify-otp', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ requestId: otpRequestId, otp: document.getElementById('otp-code').value, role: selectedRole }) });
+        if (!response.ok) throw new Error('Invalid OTP');
+        showScreen('screen-treatment');
+      } catch (error) { setStatus('That OTP is invalid or expired. Please try again.', true); }
+    });
+    document.getElementById('skip-otp').addEventListener('click', () => {
+      setStatus('Demo mode: OTP verification skipped.');
+      showScreen('screen-treatment');
+    });
+
+    document.querySelectorAll('.back-btn').forEach(button => button.addEventListener('click', () => showScreen(button.dataset.back)));
+    document.querySelectorAll('.treatment-button').forEach(button => button.addEventListener('click', () => {
+      selectedTreatment = button.dataset.treatment;
+      showScreen(selectedRole === 'patient' ? 'screen-patient' : 'screen-doctor');
+    }));
+    document.getElementById('preview-patient').addEventListener('click', () => {
+      selectedRole = 'patient';
+      showScreen('screen-patient');
+    });
+    document.querySelectorAll('.logout-btn').forEach(button => button.addEventListener('click', () => { selectedRole = null; selectedTreatment = null; showScreen('screen-language'); }));
+    const documentUpload = document.getElementById('document-upload');
+    const ocrButton = document.getElementById('ocr-btn');
+    let selectedDocument = null;
+    documentUpload.addEventListener('change', event => {
+      selectedDocument = event.target.files[0];
+      const preview = document.getElementById('document-preview');
+      document.getElementById('ocr-result').classList.add('hidden');
+      ocrButton.disabled = !selectedDocument;
+      if (!selectedDocument) { preview.classList.add('hidden'); return; }
+      document.getElementById('upload-status').textContent = `${selectedDocument.name} ready for OCR processing.`;
+      if (selectedDocument.type.startsWith('image/')) {
+        preview.src = URL.createObjectURL(selectedDocument);
+        preview.classList.remove('hidden');
+      } else preview.classList.add('hidden');
+    });
+    ocrButton.addEventListener('click', async () => {
+      if (!selectedDocument) return;
+      const status = document.getElementById('upload-status');
+      ocrButton.disabled = true; ocrButton.textContent = 'Reading document...'; status.textContent = 'Sending document to OCR...';
+      const formData = new FormData(); formData.append('document', selectedDocument);
+      try {
+        const response = await fetch('/api/documents/ocr', { method: 'POST', body: formData });
+        if (!response.ok) throw new Error('OCR service unavailable');
+        const result = await response.json();
+        document.getElementById('ocr-result').textContent = result.text || 'No readable text found.';
+        document.getElementById('ocr-result').classList.remove('hidden');
+        status.textContent = 'OCR complete. Extracted text is ready to review.';
+      } catch (error) {
+        status.textContent = 'OCR service is unavailable. Connect the backend endpoint to process this document.';
+      } finally { ocrButton.disabled = false; ocrButton.textContent = '✨ Run OCR'; }
+    });
+    const chatInput = document.getElementById('symptom-input');
+    const chatMessages = document.getElementById('chat-messages');
+    const addChatMessage = (text, type) => {
+      const bubble = document.createElement('div'); bubble.className = `chat-bubble ${type}`; bubble.textContent = text;
+      chatMessages.appendChild(bubble); chatMessages.scrollTop = chatMessages.scrollHeight;
+    };
+    const sendChatMessage = () => {
+      const text = chatInput.value.trim(); if (!text) return;
+      addChatMessage(text, 'user'); chatInput.value = '';
+      window.setTimeout(() => addChatMessage('Thank you. I’ve noted that symptom. Please share when it started and how severe it feels.', 'assistant'), 3500);
+    };
+    document.getElementById('chat-send').addEventListener('click', sendChatMessage);
+    chatInput.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendChatMessage(); } });
+    document.getElementById('summary-btn').addEventListener('click', event => { event.target.textContent = 'Summary requested'; document.getElementById('summary-status').textContent = 'Your care team can now review the summary.'; });
+    document.getElementById('speech-btn').addEventListener('click', () => {
+      const status = document.getElementById('speech-status');
+      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) { status.textContent = 'Speech-to-text is not supported in this browser.'; return; }
+      const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition; const recognition = new Recognition();
+      const speechLanguages = { en: 'en-IN', hi: 'hi-IN', bn: 'bn-IN', te: 'te-IN', mr: 'mr-IN', ta: 'ta-IN', gu: 'gu-IN' };
+      recognition.lang = speechLanguages[selectedLang] || 'en-IN'; recognition.onstart = () => { status.textContent = 'Listening...'; }; recognition.onresult = event => { chatInput.value += `${chatInput.value ? ' ' : ''}${event.results[0][0].transcript}`; status.textContent = 'Added to your message.'; }; recognition.onerror = () => { status.textContent = 'Could not hear you. Please try again.'; }; recognition.start();
+    });
+  </script>
+</body>
+</html>
