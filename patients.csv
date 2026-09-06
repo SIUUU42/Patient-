@@ -1,0 +1,6 @@
+phone,patient_name,age,gender,abha_id,doctor_name,department,time_slot
+9876543210,Ramesh Kumar,52,Male,91-8821-4432-1092,Dr. R. Sharma,General Medicine,10:30 AM
+9123456780,Sunita Devi,46,Female,91-1122-3344-5566,Vaidya A. Shastri,Kayachikitsa (Ayurveda),11:15 AM
+9999988888,Amit Verma,28,Male,91-9988-7766-5544,Dr. P. Nair,Cardiology,11:45 AM
+
+

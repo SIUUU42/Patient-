@@ -1,0 +1,4 @@
+doctor_id,doctor_name,department,room_no,username,password
+DOC01,Dr. R. Sharma,General Medicine,Room 102,drsharma,doc123
+DOC02,Vaidya A. Shastri,Kayachikitsa (Ayurveda),Room 204,drshastri,doc123
+DOC03,Dr. P. Nair,Cardiology,Room 108,drnair,doc123
