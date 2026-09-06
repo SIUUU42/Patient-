@@ -1,28 +1,24 @@
 import httpx
 
-DATABASE_SERVICE_URL = ""
+DATABASE_SERVICE_URL = "https://gruffly-divisible-tarnish.ngrok-free.dev/docs#/"
 
 
-async def save_timeline_event(
-    event_id,
-    patient_id,
-    event_type,
-    title,
-    summary_data
-):
-    async with httpx.AsyncClient() as client:
-
+async def test_database():
+    async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
-            f"{DATABASE_SERVICE_URL}/api/patient/timeline/event",
+            f"{DATABASE_SERVICE_URL}/api/ai/save-summary",
             json={
-                "event_id": event_id,
-                "patient_id": patient_id,
-                "event_type": event_type,
-                "title": title,
-                "summary_data": summary_data
+                "patient_id": "U001",
+                "chief_complaint": "Test complaint",
+                "hpi": "Backend database connectivity test",
+                "past_meds": "None",
+                "lab_anomalies": "None",
+                "is_emergency": False,
+                "emergency_reason": ""
             }
         )
 
-        response.raise_for_status()
-
-        return response.json()
+        return {
+            "db_status_code": response.status_code,
+            "db_response": response.json()
+        }

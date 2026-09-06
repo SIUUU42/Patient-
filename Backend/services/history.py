@@ -1,7 +1,6 @@
 import logging
+
 from services.ai_service import process_symptom
-#from services.database_service import save_history
-#from services.backend_a_service import send_result_to_backend_a
 
 logging.basicConfig(
     level=logging.INFO,
@@ -11,58 +10,49 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def process_answer(session_id, question_id, transcript, language):
-
+async def process_answer(
+    user_id,
+    session_id,
+    language,
+    conversation_history
+):
     logger.info(
-        "Processing transcript: session_id=%s, question_id=%s",
-        session_id,
-        question_id
+        "Processing conversation: user_id=%s, session_id=%s",
+        user_id,
+        session_id
     )
 
     try:
         ai_result = await process_symptom(
-            transcript,
-            language
+            user_id,
+            session_id,
+            language,
+            conversation_history
         )
 
         logger.info(
-            "AI processing successful: session_id=%s, question_id=%s",
-            session_id,
-            question_id
+            "AI processing successful: user_id=%s, session_id=%s",
+            user_id,
+            session_id
         )
 
     except Exception as e:
         logger.exception(
-    "AI processing failed: session_id=%s, question_id=%s",
-    session_id,
-    question_id
-)
+            "AI processing failed: user_id=%s, session_id=%s",
+            user_id,
+            session_id
+        )
 
-    # 2. Prepare complete history result
-    result = {
+        return {
+            "status": "ai_error",
+            "error_type": type(e).__name__,
+            "error": str(e)
+        }
+
+    return {
+        "user_id": user_id,
         "session_id": session_id,
-        "question_id": question_id,
-        "transcript": transcript,
         "language": language,
+        "conversation_history": conversation_history,
         "ai_result": ai_result
     }
-
-    # Database — enable when database service is available
-    #
-    # database_result = await save_timeline_event(
-    #     event_id=f"{session_id}-{question_id}",
-    #     patient_id=session_id,
-    #     event_type="INTAKE_NOTE",
-    #     title="Patient History transcript",
-    #     summary_data={
-    #         "question_id": question_id,
-    #         "transcript": transcript,
-    #         "ai_result": ai_result
-    #     }
-    # )
-
-    # 4. Send processed result to Backend-A
-    #await send_result_to_backend_a(result)
-
-    # 5. Return result to Backend-A / caller
-    #return result

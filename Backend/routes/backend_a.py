@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
 
 from services.history import process_answer
+from services.schemas import Histories
 
 router = APIRouter(
     prefix="/history",
@@ -9,21 +9,21 @@ router = APIRouter(
 )
 
 
-class HistoryAnswer(BaseModel):
-    session_id: str
-    question_id: str
-    transcript: str
-    language: str
-
-
 @router.post("/answer")
-async def receive_answer(data: HistoryAnswer):
+async def receive_answer(data: Histories):
+    try:
+        result = await process_answer(
+            data.user_id,
+            data.session_id,
+            data.language,
+            data.conversation_history
+        )
 
-    result = await process_answer(
-        data.session_id,
-        data.question_id,
-        data.transcript,
-        data.language
-    )
+        return result
 
-    return result
+    except Exception as e:
+        return {
+            "status": "backend_a_error",
+            "error_type": type(e).__name__,
+            "error": str(e)
+        }

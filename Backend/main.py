@@ -4,9 +4,17 @@ from services.history import process_answer
 from services.schemas import Histories
 from routes.backend_a import router as backend_a_router
 from routes.backend_b import router as backend_b_router
+from fastapi.middleware.cors import CORSMiddleware
 
 #GETTING fastapi
 app=FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get('/')
