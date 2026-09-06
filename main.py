@@ -1,374 +1,199 @@
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, Column, String, Integer, Boolean, Timestamp, ForeignKey, JSON, DateTime
-from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
+import os
+import tempfile
+from typing import List, Dict, Any, Optional
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import uvicorn
 
-# ==========================================
-# 1. DATABASE CONFIGURATION
-# ==========================================
-# Uses local SQLite by default for hackathon speed. 
-# Swap to PostgreSQL: "postgresql://user:password@localhost:5432/db_name"
-DATABASE_URL = "sqlite:///./clinical_app.db"
+# Module imports
+from audio_engine import transcribe_patient_audio, speak_question_to_patient
+from dialogue_manager import ask_follow_up
+from ayush_engine import get_next_ayush_question, summarize_ayush_profile
+from vlm_extractor import extract_from_prescription_image
+from document_extractor import extract_document_entities
+from summarizer import generate_clinical_summary
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+# --- FastAPI App Configuration ---
+app = FastAPI(
+    title="MediKiosk Clinical AI Engine",
+    description="Offline-capable bilingual clinical intake backend supporting Allopathy & AYUSH workflows",
+    version="1.0.0"
+)
 
-# ==========================================
-# 2. ORM MODELS (DATABASE TABLES)
-# ==========================================
-class Patient(Base):
-    __tablename__ = "patients"
-
-    patient_id = Column(String, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    age = Column(Integer, nullable=True)
-    sex = Column(String, nullable=True)
-    phone = Column(String, nullable=True)
-    language = Column(String, default="en")
-    abha_id = Column(String, unique=True, index=True, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    consents = relationship("Consent", back_populates="patient")
-    timeline_events = relationship("MedicalTimeline", back_populates="patient")
+# Enable CORS for local network and frontend team connectivity
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
-class Consent(Base):
-    __tablename__ = "consents"
-
-    consent_id = Column(String, primary_key=True)
-    patient_id = Column(String, ForeignKey("patients.patient_id"))
-    purpose = Column(String, default="CLINICAL_CARE")
-    status = Column(String, default="GRANTED")
-    granted_at = Column(DateTime, default=datetime.utcnow)
-
-    patient = relationship("Patient", back_populates="consents")
+# --- Request & Response Schemas ---
+class ChatMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
 
 
-class MedicalTimeline(Base):
-    __tablename__ = "medical_timeline"
+class DialogueTurnRequest(BaseModel):
+    conversation_history: List[ChatMessage]
+    language: str = "en"  # "en" or "hi"
 
-    event_id = Column(String, primary_key=True)
-    patient_id = Column(String, ForeignKey("patients.patient_id"))
-    event_type = Column(String, nullable=False)  # LAB_REPORT | PRESCRIPTION | INTAKE_NOTE
-    title = Column(String, nullable=False)
-    summary_data = Column(JSON, nullable=True)
-    file_url = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
-    patient = relationship("Patient", back_populates="timeline_events")
+class TextOCRRequest(BaseModel):
+    raw_text: str
 
-# Create tables in Database
-Base.metadata.create_all(bind=engine)
 
-# ==========================================
-# 3. PYDANTIC SCHEMAS (API SCHEMAS)
-# ==========================================
-class ABHARequestOTP(BaseModel):
-    abha_id: str = Field(..., example="patient@abdm")
+class AyushTurnRequest(BaseModel):
+    conversation_history: List[ChatMessage]
 
-class ABHAVerifyOTP(BaseModel):
-    abha_id: str = Field(..., example="patient@abdm")
-    otp: str = Field(..., example="123456")
 
-class TimelineEventCreate(BaseModel):
-    event_id: str
-    patient_id: str
-    event_type: str
-    title: str
-    summary_data: Optional[Dict[str, Any]] = None
-    file_url: Optional[str] = None
+class SummaryRequest(BaseModel):
+    conversation_history: List[ChatMessage]
+    document_data: Optional[Dict[str, Any]] = None
 
-class TimelineEventResponse(BaseModel):
-    event_id: str
-    patient_id: str
-    event_type: str
-    title: str
-    summary_data: Optional[Dict[str, Any]]
-    file_url: Optional[str]
-    created_at: datetime
 
-    class Config:
-        from_attributes = True
+# --- Health & Diagnostic Routes ---
+@app.get("/")
+def root():
+    return {
+        "status": "online",
+        "service": "MediKiosk Clinical AI Backend",
+        "modules_loaded": [
+            "audio_engine",
+            "dialogue_manager",
+            "ayush_engine",
+            "vlm_extractor",
+            "document_extractor",
+            "summarizer"
+        ]
+    }
 
-# ==========================================
-# 4. APP & DEPENDENCIES
-# ==========================================
-app = FastAPI(title="ABDM Clinical Engine", version="1.0.0")
 
-def get_db():
-    db = SessionLocal()
+# --- 1. Speech & Dialogue Endpoints ---
+@app.post("/api/intake/audio-turn")
+async def process_audio_turn(
+        audio_file: UploadFile = File(...),
+        language: Optional[str] = Form(None)
+):
+    """
+    Accepts audio (.wav/.webm/.mp3), transcribes with Whisper, and returns transcript and detected language.
+    """
+    suffix = os.path.splitext(audio_file.filename)[-1] or ".wav"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(await audio_file.read())
+        tmp_path = tmp.name
+
     try:
-        yield db
+        transcript, resolved_lang = transcribe_patient_audio(tmp_path, language=language)
+        return {
+            "transcript": transcript,
+            "language": resolved_lang
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"ASR error: {str(e)}")
     finally:
-        db.close()
-
-# Seed mock patient data automatically on startup
-@app.on_event("startup")
-def seed_data():
-    db = SessionLocal()
-    if not db.query(Patient).filter(Patient.patient_id == "P-101").first():
-        mock_patient = Patient(
-            patient_id="P-101",
-            name="Rahul Sharma",
-            age=34,
-            sex="Male",
-            phone="9876543210",
-            language="hi",
-            abha_id="rahul@abdm"
-        )
-        db.add(mock_patient)
-        db.commit()
-        
-        # Seed initial timeline event
-        mock_event = MedicalTimeline(
-            event_id="E-001",
-            patient_id="P-101",
-            event_type="INTAKE_NOTE",
-            title="Initial Triage Consultation",
-            summary_data={"chief_complaint": "Acute Chest Pain", "risk": "High"}
-        )
-        db.add(mock_event)
-        db.commit()
-    db.close()
-
-# ==========================================
-# 5. ENDPOINTS
-# ==========================================
-
-# --- Task 1: Mock ABHA ID Auth Flow ---
-@app.post("/api/abha/request-otp")
-def request_abha_otp(payload: ABHARequestOTP, db: Session = Depends(get_db)):
-    patient = db.query(Patient).filter(Patient.abha_id == payload.abha_id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="ABHA ID not registered")
-    
-    return {
-        "status": "SUCCESS",
-        "message": f"OTP successfully sent to phone linked with {payload.abha_id}",
-        "mock_note": "Use '123456' as OTP for hackathon testing"
-    }
-
-@app.post("/api/abha/verify-otp")
-def verify_abha_otp(payload: ABHAVerifyOTP, db: Session = Depends(get_db)):
-    # Hackathon Logic: Accept any 6-digit OTP
-    if len(payload.otp) != 6 or not payload.otp.isdigit():
-        raise HTTPException(status_code=400, detail="Invalid 6-digit OTP format")
-    
-    patient = db.query(Patient).filter(Patient.abha_id == payload.abha_id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="ABHA ID record not found")
-    
-    # Auto-grant compliance consent upon verification
-    consent_id = f"CNS-{int(datetime.utcnow().timestamp())}"
-    consent = Consent(consent_id=consent_id, patient_id=patient.patient_id)
-    db.add(consent)
-    db.commit()
-
-    return {
-        "status": "VERIFIED",
-        "patient": {
-            "patient_id": patient.patient_id,
-            "name": patient.name,
-            "age": patient.age,
-            "sex": patient.sex,
-            "abha_id": patient.abha_id,
-            "language": patient.language
-        },
-        "consent": {
-            "consent_id": consent_id,
-            "purpose": "CLINICAL_CARE",
-            "dpdp_compliant": True
-        }
-    }
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
-# --- Task 2: Timeline Queries & Creation ---
-@app.get("/api/patient/{patient_id}/timeline", response_model=List[TimelineEventResponse])
-def get_patient_timeline(patient_id: str, db: Session = Depends(get_db)):
-    events = (
-        db.query(MedicalTimeline)
-        .filter(MedicalTimeline.patient_id == patient_id)
-        .order_by(MedicalTimeline.created_at.desc())
-        .all()
-    )
-    return events
-
-@app.post("/api/patient/timeline/event", response_model=TimelineEventResponse)
-def add_timeline_event(payload: TimelineEventCreate, db: Session = Depends(get_db)):
-    event = MedicalTimeline(
-        event_id=payload.event_id,
-        patient_id=payload.patient_id,
-        event_type=payload.event_type,
-        title=payload.title,
-        summary_data=payload.summary_data,
-        file_url=payload.file_url
-    )
-    db.add(event)
-    db.commit()
-    db.refresh(event)
-    return event
+@app.post("/api/intake/dialogue-turn")
+def process_dialogue_turn(payload: DialogueTurnRequest):
+    """
+    Takes running conversation history and returns the next adaptive SOCRATES question with touchscreen options.
+    """
+    try:
+        history_dicts = [{"role": msg.role, "content": msg.content} for msg in payload.conversation_history]
+        turn_data = ask_follow_up(history_dicts, language=payload.language)
+        return turn_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Dialogue manager error: {str(e)}")
 
 
-# --- Task 3: HL7 FHIR JSON Exporter ---
-@app.get("/api/patient/{patient_id}/fhir-export")
-def export_fhir_bundle(patient_id: str, db: Session = Depends(get_db)):
-    patient = db.query(Patient).filter(Patient.patient_id == patient_id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-    
-    timeline_events = (
-        db.query(MedicalTimeline)
-        .filter(MedicalTimeline.patient_id == patient_id)
-        .all()
-    )
-
-    # Build FHIR Document Bundle compliant with ABDM standards
-    bundle_entries = [
-        # FHIR Resource 1: Patient Details
-        {
-            "fullUrl": f"urn:uuid:patient-{patient.patient_id}",
-            "resource": {
-                "resourceType": "Patient",
-                "id": patient.patient_id,
-                "identifier": [
-                    {
-                        "system": "https://healthid.abdm.gov.in",
-                        "value": patient.abha_id
-                    }
-                ],
-                "name": [{"text": patient.name}],
-                "gender": patient.sex.lower() if patient.sex else "unknown",
-                "telecom": [{"system": "phone", "value": patient.phone}]
-            }
-        }
-    ]
-
-    # FHIR Resource 2+: Observations / Clinical Notes from Timeline
-    for event in timeline_events:
-        bundle_entries.append({
-            "fullUrl": f"urn:uuid:event-{event.event_id}",
-            "resource": {
-                "resourceType": "Observation",
-                "id": event.event_id,
-                "status": "final",
-                "category": [
-                    {
-                        "coding": [
-                            {
-                                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                                "code": event.event_type.lower(),
-                                "display": event.title
-                            }
-                        ]
-                    }
-                ],
-                "subject": {"reference": f"Patient/{patient.patient_id}"},
-                "effectiveDateTime": event.created_at.isoformat(),
-                "valueString": str(event.summary_data or event.title)
-            }
-        })
-
-    return {
-        "resourceType": "Bundle",
-        "id": f"bundle-{patient_id}",
-        "type": "document",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "entry": bundle_entries
-    }
-# ==========================================
-# 6. INTEGRATION ENDPOINTS FOR TEAM MEMBERS
-# ==========================================
-
-class PatientIntakeSubmit(BaseModel):
-    patient_id: str
-    ayush_profile: Dict[str, Any]  # Person 1: Appetite, digestion, sleep
-    transcript: str                # Person 1: Audio transcript
-    document_ids: Optional[List[str]] = None
-
-class AISummaryPayload(BaseModel):
-    patient_id: str
-    chief_complaint: str
-    hpi: str
-    past_meds: Optional[str] = None
-    lab_anomalies: Optional[str] = None
-    is_emergency: bool = False     # Person 3: Triage Flag
-    emergency_reason: Optional[str] = None
-
-# --- Endpoint 1: Person 1 saves AYUSH Form & Intake Data ---
-@app.post("/api/patient/submit-intake")
-def submit_patient_intake(payload: PatientIntakeSubmit, db: Session = Depends(get_db)):
-    # Create or update the medical timeline entry with raw intake data
-    event_id = f"EVT-{int(datetime.utcnow().timestamp())}"
-    timeline_event = MedicalTimeline(
-        event_id=event_id,
-        patient_id=payload.patient_id,
-        event_type="INTAKE_NOTE",
-        title="Patient Intake & AYUSH Assessment",
-        summary_data={
-            "ayush_profile": payload.ayush_profile,
-            "raw_transcript": payload.transcript
-        }
-    )
-    db.add(timeline_event)
-    db.commit()
-    return {"status": "SUCCESS", "event_id": event_id}
+# --- 2. AYUSH Intake Endpoints ---
+@app.post("/api/intake/ayush-turn")
+def process_ayush_turn(payload: AyushTurnRequest):
+    """
+    Generates next adaptive Dashavidha Pariksha / Ahara-Vihara question for AYUSH clinics.
+    """
+    try:
+        history_dicts = [{"role": msg.role, "content": msg.content} for msg in payload.conversation_history]
+        return get_next_ayush_question(history_dicts)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AYUSH engine error: {str(e)}")
 
 
-# --- Endpoint 2: Person 3 (AI Lead) pushes Structured AI Summaries ---
-@app.post("/api/ai/save-summary")
-def save_ai_summary(payload: AISummaryPayload, db: Session = Depends(get_db)):
-    event_id = f"AI-{int(datetime.utcnow().timestamp())}"
-    
-    # Store AI extraction as a Timeline event
-    ai_event = MedicalTimeline(
-        event_id=event_id,
-        patient_id=payload.patient_id,
-        event_type="CLINICAL_SUMMARY",
-        title="AI Processed Clinical Summary",
-        summary_data={
-            "chief_complaint": payload.chief_complaint,
-            "hpi": payload.hpi,
-            "past_meds": payload.past_meds,
-            "lab_anomalies": payload.lab_anomalies,
-            "is_emergency": payload.is_emergency,
-            "emergency_reason": payload.emergency_reason
-        }
-    )
-    db.add(ai_event)
-    db.commit()
-    
-    return {"status": "SUCCESS", "message": "AI summary linked to patient record"}
+@app.post("/api/intake/ayush-summary")
+def process_ayush_summary(payload: AyushTurnRequest):
+    """
+    Generates structured Agni, Koshtha, and Dosha clinical evaluation.
+    """
+    try:
+        history_dicts = [{"role": msg.role, "content": msg.content} for msg in payload.conversation_history]
+        return summarize_ayush_profile(history_dicts)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AYUSH summary error: {str(e)}")
 
 
-# --- Endpoint 3: Person 2 (Doctor) fetches active patient queue ---
-@app.get("/api/doctor/queue")
-def get_doctor_queue(db: Session = Depends(get_db)):
-    # Fetches all patients alongside their latest clinical summary
-    patients = db.query(Patient).all()
-    queue = []
-    
-    for p in patients:
-        latest_summary = (
-            db.query(MedicalTimeline)
-            .filter(MedicalTimeline.patient_id == p.patient_id)
-            .filter(MedicalTimeline.event_type == "CLINICAL_SUMMARY")
-            .order_by(MedicalTimeline.created_at.desc())
-            .first()
-        )
-        
-        summary_data = latest_summary.summary_data if latest_summary else {}
-        
-        queue.append({
-            "patient_id": p.patient_id,
-            "name": p.name,
-            "age": p.age,
-            "sex": p.sex,
-            "chief_complaint": summary_data.get("chief_complaint", "Pending AI Processing"),
-            "is_emergency": summary_data.get("is_emergency", False),
-            "emergency_reason": summary_data.get("emergency_reason", None)
-        })
-        
-    return queue
+# --- 3. Document Extraction Endpoints ---
+@app.post("/api/document/extract-image")
+async def extract_prescription_image(image_file: UploadFile = File(...)):
+    """
+    Direct Vision LLM processing of prescription or lab slip photos.
+    """
+    suffix = os.path.splitext(image_file.filename)[-1] or ".jpg"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(await image_file.read())
+        tmp_path = tmp.name
+
+    try:
+        extracted = extract_from_prescription_image(tmp_path)
+        return extracted
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Vision extraction error: {str(e)}")
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+
+@app.post("/api/document/extract-text")
+def extract_ocr_text(payload: TextOCRRequest):
+    """
+    Fast entity extraction from OCR strings (diagnoses, medications, abnormal lab values).
+    """
+    try:
+        return extract_document_entities(payload.raw_text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OCR entity extraction error: {str(e)}")
+
+
+# --- 4. Synthesis & Physician Report Endpoint ---
+@app.post("/api/intake/synthesize")
+def synthesize_intake_report(payload: SummaryRequest):
+    """
+    Synthesizes interview history + extracted document data into doctor-ready EMR summary.
+    """
+    try:
+        history_dicts = [{"role": msg.role, "content": msg.content} for msg in payload.conversation_history]
+        summary = generate_clinical_summary(history_dicts)
+
+        # Merge extracted medications or past records if provided
+        if payload.document_data:
+            summary["attached_records"] = payload.document_data
+
+        return summary
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Synthesis error: {str(e)}")
+
+
+# --- Execution Entrypoint ---
+if __name__ == "__main__":
+    print("\n=======================================================")
+    print("       MediKiosk Central Backend Initialized           ")
+    print("=======================================================")
+    print("FastAPI docs will be available at: http://0.0.0.0:8000/docs")
+
+    # Host bound to 0.0.0.0 so teammates on the same local network can access via IP
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
