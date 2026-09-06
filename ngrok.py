@@ -2,7 +2,7 @@ import uvicorn
 from pyngrok import ngrok
 
 # 1. Set your ngrok authtoken (only needed once per machine)
-NGROK_AUTHTOKEN = "3Iva5lz48cXylsPb7NkSU4b2DEt_89SNUcTHFpahZ1m8L8YuR"
+NGROK_AUTHTOKEN = ""
 ngrok.set_auth_token(NGROK_AUTHTOKEN)
 
 # 2. Open HTTP tunnel on port 8000
