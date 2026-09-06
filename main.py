@@ -30,30 +30,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from datetime import datetime
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel, Field
 
-# --- Request & Response Schemas ---
 class ChatMessage(BaseModel):
     role: str  # "user" or "assistant"
     content: str
-
+    timestamp: Optional[str] = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 class DialogueTurnRequest(BaseModel):
-    conversation_history: List[ChatMessage]
+    user_id: str = "PATIENT_001"
+    session_id: str = "SESS_101"
     language: str = "en"  # "en" or "hi"
-
-
-class TextOCRRequest(BaseModel):
-    raw_text: str
-
-
-class AyushTurnRequest(BaseModel):
     conversation_history: List[ChatMessage]
-
 
 class SummaryRequest(BaseModel):
+    user_id: str = "PATIENT_001"
+    session_id: str = "SESS_101"
     conversation_history: List[ChatMessage]
     document_data: Optional[Dict[str, Any]] = None
 
+class AyushTurnRequest(BaseModel):
+    user_id: str = "PATIENT_001"
+    session_id: str = "SESS_101"
+    conversation_history: List[ChatMessage]
 
 # --- Health & Diagnostic Routes ---
 @app.get("/")
@@ -102,11 +103,19 @@ async def process_audio_turn(
 @app.post("/api/intake/dialogue-turn")
 def process_dialogue_turn(payload: DialogueTurnRequest):
     """
-    Takes running conversation history and returns the next adaptive SOCRATES question with touchscreen options.
+    Takes running conversation history with user/session IDs
+    and returns the next SOCRATES turn stamped with session metadata.
     """
     try:
+        # Pass conversation history to Qwen
         history_dicts = [{"role": msg.role, "content": msg.content} for msg in payload.conversation_history]
         turn_data = ask_follow_up(history_dicts, language=payload.language)
+
+        # Echo back session context for frontend tracking
+        turn_data["user_id"] = payload.user_id
+        turn_data["session_id"] = payload.session_id
+        turn_data["timestamp"] = datetime.utcnow().isoformat()
+
         return turn_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Dialogue manager error: {str(e)}")
@@ -173,15 +182,19 @@ def extract_ocr_text(payload: TextOCRRequest):
 @app.post("/api/intake/synthesize")
 def synthesize_intake_report(payload: SummaryRequest):
     """
-    Synthesizes interview history + extracted document data into doctor-ready EMR summary.
+    Synthesizes interview into doctor-ready brief stamped with patient and session IDs.
     """
     try:
         history_dicts = [{"role": msg.role, "content": msg.content} for msg in payload.conversation_history]
         summary = generate_clinical_summary(history_dicts)
 
-        # Merge extracted medications or past records if provided
         if payload.document_data:
             summary["attached_records"] = payload.document_data
+
+        # Attach metadata for EHR record storage
+        summary["user_id"] = payload.user_id
+        summary["session_id"] = payload.session_id
+        summary["generated_at"] = datetime.utcnow().isoformat()
 
         return summary
     except Exception as e:
