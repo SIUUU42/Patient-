@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from services.ai_service import process_symptom
+from services.history import process_symptom
 
 router = APIRouter(
     prefix="/backend-b",
@@ -8,9 +8,20 @@ router = APIRouter(
 
 @router.post("/test-ai")
 async def test_ai(data: dict):
-    result = await process_symptom(
-        data["text"],
-        data["language"]
-    )
+        try:
+            result = await process_symptom(
+            data["transcript"],
+            data["language"]
+        )
+            return result
 
-    return result
+        except Exception as e:
+               return {
+            "status": "backend_b_error",
+            "error_type": type(e).__name__,
+            "error": str(e)
+        }
+    
+
+
+

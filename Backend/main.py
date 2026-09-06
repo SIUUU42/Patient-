@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from services.history import process_answer
 from services.schemas import Histories
+from routes.backend_a import router as backend_a_router
 from routes.backend_b import router as backend_b_router
 
 #GETTING fastapi
@@ -12,7 +13,9 @@ app=FastAPI()
 def root():
     return {"message:": "Hermes Backend"}
 
+app.include_router(backend_a_router)
 app.include_router(backend_b_router)
+
 @app.post("/history/answer")
 
 def answer_history(request: Histories):
